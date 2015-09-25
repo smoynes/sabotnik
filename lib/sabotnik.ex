@@ -8,7 +8,7 @@ defmodule Sabotnik do
     start_link(Application.get_env(:sabotnik, :bot_token), [])
   end
 
-  def init(initial_state, _slack) do
+  def init(_, _) do
     {:ok, %{}}
   end
 
@@ -31,21 +31,22 @@ defmodule Sabotnik do
     {:ok, state}
   end
 
-  defp do_message(msg, slack, state) do
+  def do_message(msg, slack, state) do
     IO.puts "Message:"
     IO.inspect msg
     case Map.get(slack.channels, msg.channel) do
       nil ->
-        do_addressed_message(msg.text, msg.channel, slack)
-      channel ->
+        # direct message
+        do_addressed_message(msg, msg.channel, slack)
+      _ ->
         if String.starts_with?(msg.text, slack.me.name <> ":") do
-          do_addressed_message(strip_username(msg.text), channel, slack)
+          do_addressed_message(msg, msg.channel, slack)
         end
     end
   end
 
   def do_addressed_message(msg, channel, slack) do
-    case strip_username(msg) do
+    case strip_username(msg.text) do
       "ping" ->
         send_message("mew", channel, slack)
       "pet" ->
