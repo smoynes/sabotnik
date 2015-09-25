@@ -1,0 +1,2 @@
+defmodule Sabotnik do
+end
