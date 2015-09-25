@@ -1,18 +1,15 @@
 defmodule Sabotnik do
   use Slack
 
+  require IEx
   require Logger
   
   def start_link do
-    start_link(Application.get_env(:sabotnik, :bot_token), [name: __MODULE__])
+    start_link(Application.get_env(:sabotnik, :bot_token), [])
   end
 
-  def stop(pid) do
-    GenServer.stop(__MODULE__)
-  end
-  
   def init(initial_state, _slack) do
-    {:ok, initial_state}
+    {:ok, %{}}
   end
 
   def handle_connect(slack, state) do
@@ -35,11 +32,26 @@ defmodule Sabotnik do
   end
 
   defp do_message(msg, slack, state) do
-    if String.starts_with?(msg.text, slack.me.name <> ":") do
-      case strip_username(msg.text) do
-        "ping" ->
-          send_message("mew", msg.channel, slack)
-      end
+    IO.puts "Message:"
+    IO.inspect msg
+    case Map.get(slack.channels, msg.channel) do
+      nil ->
+        do_addressed_message(msg.text, msg.channel, slack)
+      channel ->
+        if String.starts_with?(msg.text, slack.me.name <> ":") do
+          do_addressed_message(strip_username(msg.text), channel, slack)
+        end
+    end
+  end
+
+  def do_addressed_message(msg, channel, slack) do
+    case strip_username(msg) do
+      "ping" ->
+        send_message("mew", channel, slack)
+      "pet" ->
+        send_message("purr", channel, slack)
+      _ ->
+        :ok
     end
   end
 
