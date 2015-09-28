@@ -12,7 +12,9 @@ defmodule Sabotnik.ReactionGifs do
   end
 
   def process_url(tags) do
-    "http://replygif.net/api/gifs?api-key=39YAprx5Yi&tag-operator=or&tag=#{tags}"
+    url = "http://replygif.net/api/gifs?api-key=39YAprx5Yi&tag-operator=or&tag=#{tags}"
+    IO.inspect url
+    url
   end
 
   def process_response_body(body) do

@@ -81,6 +81,14 @@ defmodule Sabotnik do
           :ok
         end)
         {:task, task}
+      Regex.match?(~r/!cat/, msg.text) ->
+        task = Task.async(fn ->
+          message = Sabotnik.Cats.random_gif
+          send_message(message, msg.channel, slack)
+          :ok
+        end)
+        {:task, task}
+
       true ->
         :pass
     end
