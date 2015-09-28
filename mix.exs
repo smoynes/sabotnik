@@ -11,11 +11,13 @@ defmodule Sabotnik.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :slack]]
+    [applications: [:logger, :slack, :httpoison]]
   end
 
   defp deps do
     [{:slack, "~> 0.2.0"},
-     {:websocket_client, git: "https://github.com/jeremyong/websocket_client"}]
+     {:websocket_client, git: "https://github.com/jeremyong/websocket_client"},
+     {:httpoison, "~> 0.7.2"},
+     {:poison, "~> 1.5.0"}]
   end
 end
