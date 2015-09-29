@@ -77,7 +77,7 @@ defmodule Sabotnik do
         task = Sabotnik.Tasks.async(Sabotnik.ReactionGifs, :random_gif, msg, slack)
         {:task, task}
       Regex.match?(~r/!cat/, msg.text) ->
-      task = Sabotnik.Tasks.async(Sabotnik.Cats, :random_gif, msg, slack)
+        task = Sabotnik.Tasks.async(Sabotnik.Cats, :random_gif, msg, slack)
         {:task, task}
       true ->
         :pass

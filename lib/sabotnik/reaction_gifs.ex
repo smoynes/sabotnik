@@ -27,6 +27,7 @@ defmodule Sabotnik.ReactionGifs do
     |> Enum.map(fn (gif) -> Dict.get(gif, "url") end)
   end
 
+  def make_image_url(nil), do: nil
   def make_image_url(url) do
     String.replace(url, ~r/(\d+)/, "i/\\1.gif")
   end
