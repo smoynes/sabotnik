@@ -56,8 +56,8 @@ defmodule Sabotnik do
         state
       :pass ->
         case handle_command(msg, slack) do
-          {:reply, message} ->
-            send_message(message, msg.channel, slack)
+          {:reply, response} ->
+            send_message(response, msg.channel, slack)
             state
           {:task, task} ->
             tasks = [task] ++ state.tasks
@@ -74,21 +74,11 @@ defmodule Sabotnik do
       msg[:text] === nil ->
         :pass
       Regex.match?(~r/!reaction/, msg.text) ->
-        task = Task.async(fn ->
-          tags = tl(String.split(msg.text))
-          message = Sabotnik.ReactionGifs.random_gif(tags)
-          send_message(message, msg.channel, slack)
-          :ok
-        end)
+        task = Sabotnik.Tasks.async(Sabotnik.ReactionGifs, :random_gif, msg, slack)
         {:task, task}
       Regex.match?(~r/!cat/, msg.text) ->
-        task = Task.async(fn ->
-          message = Sabotnik.Cats.random_gif
-          send_message(message, msg.channel, slack)
-          :ok
-        end)
+      task = Sabotnik.Tasks.async(Sabotnik.Cats, :random_gif, msg, slack)
         {:task, task}
-
       true ->
         :pass
     end

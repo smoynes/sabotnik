@@ -2,7 +2,7 @@ defmodule Sabotnik.Cats do
 
   use HTTPoison.Base
 
-  def random_gif() do
+  def random_gif(_) do
     response = get!("http://thecatapi.com/api/images/get?format=src")
     IO.inspect response
     response.headers
