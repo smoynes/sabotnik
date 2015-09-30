@@ -2,6 +2,10 @@ defmodule Sabotnik.ReactionGifs do
 
   use HTTPoison.Base
 
+  def pattern, do: ~r/!reaction/
+  
+  def respond(msg), do: random_gif(msg)
+  
   def random_gif(tags) when is_list(tags) do
     :random.seed(:os.timestamp)
     response = get!(tag_list(tags))

@@ -32,72 +32,72 @@ defmodule Sabotnik do
     {:ok, state}
   end
 
-  def websocket_info(msg = {ref, _reply}, _, handler_state = %{state: state}) do
+  def websocket_info(msg, _, handler_state = %{state: state}) do
     case Task.find(state.tasks, msg) do
-      {_, task} ->
-        {:ok, %{handler_state | state: put_in(state[:tasks], List.delete(state.tasks, task))}}
+      {:ok, task} ->
+        {:ok, %{handler_state | state: remove_task(state, task)}}
       _ ->
         {:ok, handler_state}
     end
   end
 
-  def websocket_info(msg, _, %{state: state}) do
-    IO.puts "Received platform message:"
-    IO.inspect msg
-    {:ok, state}
-  end
-
   def do_message(msg, slack, state) do
     IO.puts "Message:"
     IO.inspect msg
-    case do_addressed_message(msg, slack) do
-      {:reply, message} ->
-        send_message(message, msg.channel, slack)
+    case handle_command(msg, slack) do
+      {:reply, response} ->
+        send_message(response, msg.channel, slack)
         state
-      :pass ->
-        case handle_command(msg, slack) do
-          {:reply, response} ->
-            send_message(response, msg.channel, slack)
-            state
-          {:task, task} ->
-            tasks = [task] ++ state.tasks
-            %{state|tasks: tasks}
-          :pass ->
-            IO.puts "Unmatched #{msg[:text]}"
-            state
-        end
+      {:task, task} ->
+        %{state|tasks: Enum.into([task], state.tasks)}
+      :ok ->
+        IO.puts "Unmatched #{msg[:text]}"
+        state
     end
   end
 
+  @modules [
+      Sabotnik.Reddit,
+      Sabotnik.ReactionGifs,
+      Sabotnik.Cats
+  ]
+  
   def handle_command(msg, slack) do
+    text = strip_username(msg[:text], slack.me.name)
     cond do
-      msg[:text] === nil ->
-        :pass
-      Regex.match?(~r/!reaction/, msg.text) ->
-        task = Sabotnik.Tasks.async(Sabotnik.ReactionGifs, :random_gif, msg, slack)
-        {:task, task}
-      Regex.match?(~r/!cat/, msg.text) ->
-        task = Sabotnik.Tasks.async(Sabotnik.Cats, :random_gif, msg, slack)
-        {:task, task}
-      Regex.match?(~r/!reddit/, msg.text) ->
-        task = Sabotnik.Tasks.async(Sabotnik.Reddit, :random_link, msg, slack)
-        {:task, task}
+      text == "ping"   -> {:reply, "mew"}
+      text == "pet"    -> {:reply, "purr"}
+      text == ":weed:" -> {:reply, "fucking love catnip"}
+      mod = find_command_module(@modules, msg[:text]) ->
+        start_command_task(mod, msg, slack)
       true ->
-        :pass
+        :ok
     end
   end
 
-  def do_addressed_message(msg, slack) do
-    case strip_username(msg[:text], slack.me.name) do
-      "ping" ->
-        {:reply, "mew"}
-      "pet" ->
-        {:reply, "purr"}
-      ":weed:" ->
-        {:reply, "fucking love catnip"}
-      _ ->
-        :pass
+  def find_command_module(_mods, nil), do: nil
+  
+  def find_command_module(mods, text) do
+    Enum.find(mods, fn e ->
+      Regex.match?(e.pattern, text)
+    end)
+  end
+
+  def start_command_task(nil, _, _) do
+    :ok
+  end
+  
+  def start_command_task(mod, msg, slack) do
+    try do
+      task = Sabotnik.Tasks.async(mod, :respond, msg, slack)
+      {:task, task}
+    catch
+      :timeout -> {:error, :timeout}
     end
+  end
+
+  def remove_task(state, task) do
+    Map.update(state, :tasks, [], &List.delete(&1, task))
   end
 
   def strip_username(nil, _), do: nil
