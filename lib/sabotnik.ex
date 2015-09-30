@@ -1,8 +1,6 @@
 defmodule Sabotnik do
-  use Slack
 
-  require IEx
-  require Logger
+  use Slack
 
   def start_link do
     start_link(Application.get_env(:sabotnik, :bot_token), %{tasks: []})
@@ -17,9 +15,11 @@ defmodule Sabotnik do
     {:ok, state}
   end
 
+  def handle_message(%{hidden: true}, _, state), do: {:ok, state}
+
   def handle_message(msg = %{type: "message"}, slack, state) do
     try do
-      state = do_message(msg, slack, state)
+      state = do_handle_message(msg, slack, state)
       {:ok, state}
     rescue
       error ->
@@ -32,16 +32,16 @@ defmodule Sabotnik do
     {:ok, state}
   end
 
-  def websocket_info(msg, _, handler_state = %{state: state}) do
+  def websocket_info(msg, _, socket_state = %{state: state}) do
     case Task.find(state.tasks, msg) do
       {:ok, task} ->
-        {:ok, %{handler_state | state: remove_task(state, task)}}
+        {:ok, %{socket_state | state: remove_task(state, task)}}
       _ ->
-        {:ok, handler_state}
+        {:ok, socket_state}
     end
   end
 
-  def do_message(msg, slack, state) do
+  def do_handle_message(msg, slack, state) do
     IO.puts "Message:"
     IO.inspect msg
     case handle_command(msg, slack) do
@@ -61,7 +61,7 @@ defmodule Sabotnik do
       Sabotnik.ReactionGifs,
       Sabotnik.Cats
   ]
-  
+
   def handle_command(msg, slack) do
     text = strip_username(msg[:text], slack.me.name)
     cond do
@@ -76,7 +76,7 @@ defmodule Sabotnik do
   end
 
   def find_command_module(_mods, nil), do: nil
-  
+
   def find_command_module(mods, text) do
     Enum.find(mods, fn e ->
       Regex.match?(e.pattern, text)
@@ -86,7 +86,7 @@ defmodule Sabotnik do
   def start_command_task(nil, _, _) do
     :ok
   end
-  
+
   def start_command_task(mod, msg, slack) do
     try do
       task = Sabotnik.Tasks.async(mod, :respond, msg, slack)
