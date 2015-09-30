@@ -18,6 +18,7 @@ defmodule Sabotnik.Mixfile do
     [{:slack, "~> 0.2.0"},
      {:websocket_client, git: "https://github.com/jeremyong/websocket_client"},
      {:httpoison, "~> 0.7.2"},
-     {:poison, "~> 1.5.0"}]
+     #{:poison, "~> 1.5.0"},
+     {:reddhl, "~> 0.0.1"}]
   end
 end
